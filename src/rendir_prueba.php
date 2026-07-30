@@ -1,6 +1,7 @@
 <?php
 session_start();
 require 'config.php';
+$pdo = getDBConnection();
 
 // Validar que sea un estudiante
 if (!isset($_SESSION['user_id']) || $_SESSION['rol'] !== 'estudiante') {
