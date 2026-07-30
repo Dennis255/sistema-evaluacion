@@ -103,7 +103,7 @@ $temas = [
 ];
 
 try {
-    $pdo->beginTransaction(); 
+    $pdo->beginTransaction();
 
     foreach ($temas as $tema) {
         // 1. Insertar la Prueba (¡AQUÍ ESTÁ LA CORRECCIÓN DEL TIEMPO!)
@@ -114,19 +114,19 @@ try {
 
         // 2. Insertar Preguntas y Opciones
         foreach ($tema['preguntas'] as $preg) {
-            $stmtPreg = $pdo->prepare("INSERT INTO preguntas (prueba_id, texto) VALUES (?, ?) RETURNING id");
+            $stmtPreg = $pdo->prepare("INSERT INTO preguntas (prueba_id, pregunta) VALUES (?, ?) RETURNING id");
             $stmtPreg->execute([$prueba_id, $preg['texto']]);
             $pregunta_id = $stmtPreg->fetchColumn();
 
             // 3. Insertar Opciones
             foreach ($preg['opciones'] as $index => $texto_opcion) {
-                $es_correcta = ($index === $preg['correcta']) ? 1 : 0; 
+                $es_correcta = ($index === $preg['correcta']) ? 1 : 0;
                 $stmtOpc = $pdo->prepare("INSERT INTO opciones (pregunta_id, texto, es_correcta) VALUES (?, ?, ?)");
                 $stmtOpc->execute([$pregunta_id, $texto_opcion, $es_correcta]);
             }
         }
     }
-    
+
     $pdo->commit();
     echo "¡Pruebas (1 al 6), preguntas y opciones creadas exitosamente!";
 
