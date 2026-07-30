@@ -1,4 +1,3 @@
-<!-- index.php -->
 <?php 
 session_start();
 // Si ya hay una sesión activa, redirigir según el rol

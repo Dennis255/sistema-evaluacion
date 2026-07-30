@@ -2,6 +2,7 @@
 // login_process.php
 session_start();
 require 'config.php';
+$pdo = getDBConnection();
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = trim($_POST['email']);
