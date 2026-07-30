@@ -38,8 +38,9 @@ try {
         <div class="container">
             <a class="navbar-brand" href="#">👨‍🏫 Panel Docente</a>
             <a href="logout.php" class="btn btn-outline-light btn-sm">Cerrar Sesión</a>
-        <!-- Agrega este botón donde prefieras en tu panel de profesor -->
-<a href="registrar_estudiante.php" class="btn btn-outline-success btn-sm">➕ Registrar Nuevo Estudiante</a>
+            <!-- Agrega este botón donde prefieras en tu panel de profesor -->
+            <a href="registrar_estudiante.php" class="btn btn-outline-success btn-sm">➕ Registrar Nuevo Estudiante</a>
+            <a href="gestionar_usuarios.php" class="btn btn-outline-warning btn-sm">⚙️ Gestionar Usuarios</a>
         </div>
     </nav>
 
