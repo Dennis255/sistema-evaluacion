@@ -17,15 +17,15 @@ try {
     $stmt = $pdo->query("SELECT * FROM pruebas WHERE estado = 'activa' ORDER BY id ASC");
     $pruebas_activas = $stmt->fetchAll();
 
-    // 2. Obtener los resultados previos de este estudiante
-    $stmtResultados = $pdo->prepare("SELECT prueba_id, puntaje_total FROM resultados WHERE usuario_id = ?");
+    // 2. Obtener los resultados previos de este estudiante usando 'estudiante_id' y 'calificacion'
+    $stmtResultados = $pdo->prepare("SELECT prueba_id, calificacion FROM resultados WHERE estudiante_id = ?");
     $stmtResultados->execute([$estudiante_id]);
     $resultados_raw = $stmtResultados->fetchAll();
     
-    // Convertimos los resultados a un formato fácil de buscar: [prueba_id => puntaje]
+    // Convertimos los resultados a un formato fácil de buscar: [prueba_id => calificacion]
     $pruebas_rendidas = [];
     foreach ($resultados_raw as $res) {
-        $pruebas_rendidas[$res['prueba_id']] = $res['puntaje_total'];
+        $pruebas_rendidas[$res['prueba_id']] = $res['calificacion'];
     }
 
 } catch (PDOException $e) {
@@ -75,11 +75,10 @@ try {
                             
                             <?php if ($ya_rendida): ?>
                                 <div class="alert alert-success p-2 text-center mb-0">
-                                    <strong>Calificación: <?= $puntaje ?> / 10</strong><br>
+                                    <strong>Calificación: <?= $puntaje ?></strong><br>
                                     <small>Ya completaste esta prueba</small>
                                 </div>
                             <?php else: ?>
-                                <!-- Redirige al archivo que ya tienes creado en tu proyecto -->
                                 <a href="rendir_prueba.php?id=<?= $prueba['id'] ?>" class="btn btn-primary w-100">📝 Iniciar Prueba</a>
                             <?php endif; ?>
                         </div>
