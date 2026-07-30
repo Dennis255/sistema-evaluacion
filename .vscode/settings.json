@@ -1,0 +1,24 @@
+{
+    "sqltools.connections": [
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "dpg-d9lrn8710e5c73e949ug-a",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "db-sistema-ingles",
+            "database": "sistema_pruebas",
+            "username": "sistema_pruebas_user"
+        },
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "dpg-d9lrn8710e5c73e949ug-a.oregon-postgres.render.com/sistema_pruebas",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "Render DB",
+            "database": "sistema_pruebas",
+            "username": "sistema_pruebas_user"
+        }
+    ]
+}
