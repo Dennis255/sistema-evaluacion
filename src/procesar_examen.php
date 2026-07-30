@@ -30,7 +30,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         foreach ($preguntas as $pregunta) {
             $pregunta_id = $pregunta['id'];
             
-            // Buscar cuál era la opción correcta real en la base de datos (PostgreSQL usa TRUE para booleanos)
+            // Buscar cuál era la opción correcta real en la base de datos
             $stmt_correcta = $pdo->prepare("SELECT id, texto_opcion FROM opciones WHERE pregunta_id = ? AND es_correcta = TRUE");
             $stmt_correcta->execute([$pregunta_id]);
             $opcion_correcta = $stmt_correcta->fetch(PDO::FETCH_ASSOC);
@@ -59,7 +59,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 'texto_elegida' => $texto_elegida,
                 'texto_correcta' => $opcion_correcta['texto_opcion'],
                 'es_acierto' => $es_acierto,
-                'retroalimentacion' => $pregunta['retroalimentacion']
+                // CORRECCIÓN: Si es null, le pasamos una cadena vacía para evitar el warning
+                'retroalimentacion' => $pregunta['retroalimentacion'] ?? ''
             ];
         }
 
@@ -103,9 +104,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </div>
                 </div>
 
-                <!-- Análisis de Respuestas (Fomento de la Autonomía) -->
+                <!-- Análisis de Respuestas -->
                 <h4 class="mb-3 text-primary fw-bold">Revisión y Retroalimentación</h4>
-                <p class="text-muted">Revisa tus errores y lee la retroalimentación para mejorar en tu próximo intento.</p>
+                <p class="text-muted">Revisa tus respuestas y la retroalimentación para mejorar en tu proceso de aprendizaje.</p>
 
                 <?php foreach ($reporte as $index => $item): ?>
                     <div class="card mb-3 shadow-sm border-0 border-start border-4 <?= $item['es_acierto'] ? 'border-success' : 'border-danger' ?>">
@@ -120,18 +121,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                     </span>
                                 </p>
                                 
-                                <!-- Si se equivocó, mostrar la respuesta correcta y la retroalimentación -->
                                 <?php if (!$item['es_acierto']): ?>
                                     <p class="mb-2 text-success">
                                         <strong>Respuesta correcta:</strong> <?= htmlspecialchars($item['texto_correcta']) ?>
                                     </p>
-                                    
+                                <?php else: ?>
+                                    <span class="badge bg-success mt-1 mb-2">¡Correcto!</span>
+                                <?php endif; ?>
+
+                                <!-- CORRECCIÓN: Mostramos el feedback siempre que exista texto, sin importar si acertó o falló -->
+                                <?php if (!empty(trim($item['retroalimentacion']))): ?>
                                     <div class="alert alert-info mt-3 mb-0 border-0 bg-opacity-10 bg-primary text-dark">
                                         <strong>💡 Feedback del profesor:</strong><br>
                                         <?= nl2br(htmlspecialchars($item['retroalimentacion'])) ?>
                                     </div>
-                                <?php else: ?>
-                                    <span class="badge bg-success mt-2">¡Correcto!</span>
                                 <?php endif; ?>
                             </div>
                         </div>
