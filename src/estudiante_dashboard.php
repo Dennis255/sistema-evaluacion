@@ -79,8 +79,7 @@ try {
                                     <small>Ya completaste esta prueba</small>
                                 </div>
                             <?php else: ?>
-                                <a href="rendir_prueba.php?id=<?= $prueba['id'] ?>" class="btn btn-primary w-100">📝 Iniciar Prueba</a>
-                            <?php endif; ?>
+<a href="rendir_prueba.php?prueba_id=<?= $prueba['id'] ?>" class="btn btn-primary w-100">📝 Iniciar Prueba</a>                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
