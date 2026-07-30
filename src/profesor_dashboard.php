@@ -87,6 +87,8 @@ try {
                                             class="btn btn-primary btn-sm">✏️ Editar</a>
                                         <a href="estado_prueba.php?id=<?= $prueba['id'] ?>"
                                             class="btn btn-warning btn-sm">🔄 Estado</a>
+                                        <a href="ver_estadisticas.php?id=<?= $prueba['id'] ?>"
+                                            class="btn btn-info btn-sm mb-1 text-white">📊 Estadísticas</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
