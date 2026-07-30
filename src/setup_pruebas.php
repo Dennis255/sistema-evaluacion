@@ -133,5 +133,6 @@ try {
 } catch (PDOException $e) {
     $pdo->rollBack();
     echo "Error en la base de datos: " . $e->getMessage();
+    //https://sistema-ingles-web.onrender.com/setup_pruebas.php
 }
 ?>
