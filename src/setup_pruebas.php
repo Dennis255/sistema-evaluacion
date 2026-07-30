@@ -106,9 +106,10 @@ try {
     $pdo->beginTransaction(); 
 
     foreach ($temas as $tema) {
-        // 1. Insertar la Prueba
-        $stmtPrueba = $pdo->prepare("INSERT INTO pruebas (titulo, descripcion) VALUES (?, ?) RETURNING id");
-        $stmtPrueba->execute([$tema['titulo'], $tema['descripcion']]);
+        // 1. Insertar la Prueba (¡AQUÍ ESTÁ LA CORRECCIÓN DEL TIEMPO!)
+        $tiempo = 15; // 15 minutos por defecto
+        $stmtPrueba = $pdo->prepare("INSERT INTO pruebas (titulo, descripcion, tiempo_minutos) VALUES (?, ?, ?) RETURNING id");
+        $stmtPrueba->execute([$tema['titulo'], $tema['descripcion'], $tiempo]);
         $prueba_id = $stmtPrueba->fetchColumn();
 
         // 2. Insertar Preguntas y Opciones
