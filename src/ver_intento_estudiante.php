@@ -18,7 +18,7 @@ if (!$estudiante_id || !$prueba_id) {
 }
 
 try {
-    // 1. Obtener datos del estudiante y de la prueba
+    // 1. Obtener datos del estudiante, de la prueba y del resultado obtenido
     $stmtEst = $pdo->prepare("SELECT nombre, email FROM usuarios WHERE id = ?");
     $stmtEst->execute([$estudiante_id]);
     $estudiante = $stmtEst->fetch(PDO::FETCH_ASSOC);
@@ -35,9 +35,7 @@ try {
         die("No se encontraron registros de este intento.");
     }
 
-    // 2. Obtener las preguntas y evaluar qué respondió el alumno en su momento 
-    // (Nota: Si guardas las respuestas detalladas por opción seleccionada, puedes consultarlas aquí. 
-    //  Como alternativa robusta, listamos las preguntas, la opción correcta y el feedback).
+    // 2. Obtener las preguntas de la prueba
     $stmt_preguntas = $pdo->prepare("SELECT id, texto_pregunta, retroalimentacion FROM preguntas WHERE prueba_id = ?");
     $stmt_preguntas->execute([$prueba_id]);
     $preguntas = $stmt_preguntas->fetchAll(PDO::FETCH_ASSOC);
@@ -87,8 +85,8 @@ try {
         </div>
     </div>
 
-    <h4 class="mb-3 text-secondary fw-bold">Desglose de Preguntas y Respuestas</h4>
-    <p class="text-muted small mb-4">Revisa las opciones correctas y el feedback pedagógico configurado para este tema.</p>
+    <h4 class="mb-3 text-secondary fw-bold">Desglose de Preguntas</h4>
+    <p class="text-muted small mb-4">Visualiza las opciones correctas y el estándar de evaluación para identificar qué conceptos debes reforzar en clase.</p>
 
     <?php foreach ($preguntas as $index => $pregunta): ?>
         <?php
@@ -105,8 +103,9 @@ try {
                     <?php foreach ($opciones as $opcion): ?>
                         <?php 
                             $estiloOpcion = "";
+                            // Resaltar la opción correcta en verde institucional
                             if ($opcion['es_correcta']) {
-                                $estiloOpcion = "list-group-item-success fw-bold"; // Resalta la correcta en verde
+                                $estiloOpcion = "list-group-item-success fw-bold";
                             }
                         ?>
                         <li class="list-group-item <?= $estiloOpcion ?>">
@@ -116,10 +115,14 @@ try {
                     <?php endforeach; ?>
                 </ul>
 
-                <?php if (!empty(trim($pregunta['retroalimentacion']))): ?>
+                <?php 
+                    // Solución al warning de trim() con valores nulos usando el operador ?? ''
+                    $feedback = $pregunta['retroalimentacion'] ?? '';
+                    if (!empty(trim($feedback))): 
+                ?>
                     <div class="alert alert-info mb-0 border-0 bg-opacity-10 bg-primary text-dark">
                         <strong>💡 Feedback pedagógico de refuerzo:</strong><br>
-                        <?= nl2br(htmlspecialchars($pregunta['retroalimentacion'])) ?>
+                        <?= nl2br(htmlspecialchars($feedback)) ?>
                     </div>
                 <?php endif; ?>
             </div>
