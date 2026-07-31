@@ -16,6 +16,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $respuestas_estudiante = isset($_POST['respuestas']) ? $_POST['respuestas'] : [];
 
     try {
+        // Iniciar transacción para asegurar que todo se guarde correctamente
+        $pdo->beginTransaction();
+
         // 1. Obtener todas las preguntas de esta prueba para evaluar
         $stmt_preguntas = $pdo->prepare("SELECT id, texto_pregunta, retroalimentacion FROM preguntas WHERE prueba_id = ?");
         $stmt_preguntas->execute([$prueba_id]);
@@ -53,25 +56,43 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             }
 
-            // Guardamos el detalle para imprimirlo en el HTML
+            // Guardamos el detalle para imprimirlo en el HTML y procesar después
             $reporte[] = [
+                'pregunta_id' => $pregunta_id,
                 'texto_pregunta' => $pregunta['texto_pregunta'],
+                'opcion_elegida_id' => $opcion_elegida_id,
                 'texto_elegida' => $texto_elegida,
                 'texto_correcta' => $opcion_correcta['texto_opcion'],
                 'es_acierto' => $es_acierto,
-                // CORRECCIÓN: Si es null, le pasamos una cadena vacía para evitar el warning
                 'retroalimentacion' => $pregunta['retroalimentacion'] ?? ''
             ];
         }
-
+        
         // 2. Calcular la calificación sobre 10 (con 2 decimales)
         $calificacion_final = ($total_preguntas > 0) ? round(($respuestas_correctas / $total_preguntas) * 10, 2) : 0;
 
-        // 3. Guardar el resultado en la base de datos
-        $stmt_insert = $pdo->prepare("INSERT INTO resultados (prueba_id, estudiante_id, calificacion) VALUES (?, ?, ?)");
+        // 3. Guardar el resultado principal en la base de datos (con RETURNING id para PostgreSQL)
+        $stmt_insert = $pdo->prepare("INSERT INTO resultados (prueba_id, estudiante_id, calificacion) VALUES (?, ?, ?) RETURNING id");
         $stmt_insert->execute([$prueba_id, $estudiante_id, $calificacion_final]);
+        $resultado_id = $stmt_insert->fetchColumn();
+
+        // 4. Guardar el detalle de cada respuesta en la nueva tabla detalle_resultados
+        $stmt_detalle = $pdo->prepare("INSERT INTO detalle_resultados (resultado_id, pregunta_id, opcion_elegida_id, es_acierto) VALUES (?, ?, ?, ?)");
+        
+        foreach ($reporte as $item) {
+            $stmt_detalle->execute([
+                $resultado_id, 
+                $item['pregunta_id'], 
+                $item['opcion_elegida_id'], 
+                $item['es_acierto'] ? 'TRUE' : 'FALSE'
+            ]);
+        }
+
+        // Confirmar transacción
+        $pdo->commit();
 
     } catch (PDOException $e) {
+        $pdo->rollBack();
         die("Error al procesar el examen: " . $e->getMessage());
     }
 } else {
@@ -129,7 +150,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                     <span class="badge bg-success mt-1 mb-2">¡Correcto!</span>
                                 <?php endif; ?>
 
-                                <!-- CORRECCIÓN: Mostramos el feedback siempre que exista texto, sin importar si acertó o falló -->
+                                <!-- Feedback del profesor -->
                                 <?php if (!empty(trim($item['retroalimentacion']))): ?>
                                     <div class="alert alert-info mt-3 mb-0 border-0 bg-opacity-10 bg-primary text-dark">
                                         <strong>💡 Feedback del profesor:</strong><br>

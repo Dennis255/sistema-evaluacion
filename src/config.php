@@ -1,23 +1,24 @@
 <?php
 // db.php - Conexión y migración automática para Render / GitHub
 
-function getDBConnection() {
+function getDBConnection()
+{
     static $pdo = null;
 
     if ($pdo === null) {
         // Obtenemos las credenciales desde variables de entorno (recomendado) 
         // o usamos los valores por defecto si no están definidas.
-        $host     = getenv('DB_HOST') ?: 'dpg-d9lrn8710e5c73e949ug-a.oregon-postgres.render.com';
-        $port     = getenv('DB_PORT') ?: '5432';
-        $dbname   = getenv('DB_NAME') ?: 'sistema_pruebas';
-        $user     = getenv('DB_USER') ?: 'sistema_pruebas_user';
+        $host = getenv('DB_HOST') ?: 'dpg-d9lrn8710e5c73e949ug-a.oregon-postgres.render.com';
+        $port = getenv('DB_PORT') ?: '5432';
+        $dbname = getenv('DB_NAME') ?: 'sistema_pruebas';
+        $user = getenv('DB_USER') ?: 'sistema_pruebas_user';
         $password = getenv('DB_PASS') ?: 'KCSN7wvyzU7zJJtqBiu4ZQJHQbgz67sz';
 
         $dsn = "pgsql:host=$host;port=$port;dbname=$dbname;sslmode=require";
 
         try {
             $pdo = new PDO($dsn, $user, $password, [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             ]);
 
@@ -32,7 +33,8 @@ function getDBConnection() {
     return $pdo;
 }
 
-function inicializarEstructuraBD(PDO $pdo) {
+function inicializarEstructuraBD(PDO $pdo)
+{
     // El uso de IF NOT EXISTS garantiza que si la tabla ya existe con datos, NO SE BORRA NI MODIFICA.
     $sql = "
     -- 1. Tabla de Usuarios
@@ -81,6 +83,13 @@ function inicializarEstructuraBD(PDO $pdo) {
         FOREIGN KEY (prueba_id) REFERENCES pruebas(id) ON DELETE CASCADE,
         FOREIGN KEY (estudiante_id) REFERENCES usuarios(id) ON DELETE CASCADE
     );
+    CREATE TABLE IF NOT EXISTS detalle_resultados (
+    id SERIAL PRIMARY KEY,
+    resultado_id INT REFERENCES resultados(id) ON DELETE CASCADE,
+    pregunta_id INT REFERENCES preguntas(id) ON DELETE CASCADE,
+    opcion_elegida_id INT REFERENCES opciones(id) ON DELETE CASCADE,
+    es_acierto BOOLEAN NOT NULL
+);
     ";
 
     $pdo->exec($sql);
