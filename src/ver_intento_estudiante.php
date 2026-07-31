@@ -45,8 +45,7 @@ try {
     // 3. Obtener el detalle de las respuestas que marcó este alumno en este intento
     $stmtDetalle = $pdo->prepare("SELECT pregunta_id, opcion_elegida_id, es_acierto FROM detalle_resultados WHERE resultado_id = ?");
     $stmtDetalle->execute([$resultado_id]);
-    $detalles_raw = $stmtDetalle.fetchAll(PDO::FETCH_ASSOC) ?: [];
-    
+    $detalles_raw = $stmtDetalle->fetchAll(PDO::FETCH_ASSOC) ?: [];
     // Indexar por pregunta_id para consulta rápida
     $respuestas_alumno = [];
     foreach ($detalles_raw as $det) {
@@ -63,49 +62,56 @@ try {
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Revisión de Examen - Alumno</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
+
 <body class="bg-light pb-5">
 
-<nav class="navbar navbar-dark bg-dark mb-4">
+    <nav class="navbar navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="profesor_dashboard.php">👨‍🏫 Panel Docente</a>
+            <a href="logout.php" class="btn btn-outline-light btn-sm">Cerrar Sesión</a>
+        </div>
+    </nav>
+
     <div class="container">
-        <a class="navbar-brand" href="profesor_dashboard.php">👨‍🏫 Panel Docente</a>
-        <a href="logout.php" class="btn btn-outline-light btn-sm">Cerrar Sesión</a>
-    </div>
-</nav>
-
-<div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2>🔍 Auditoría Detallada de Examen</h2>
-            <h5 class="text-muted">Estudiante: <span class="text-dark fw-bold"><?= htmlspecialchars($estudiante['nombre']) ?></span> (<?= htmlspecialchars($estudiante['email']) ?>)</h5>
-        </div>
-        <a href="ver_estadisticas.php?id=<?= $prueba_id ?>" class="btn btn-outline-secondary">⬅ Volver a Estadísticas</a>
-    </div>
-
-    <!-- Tarjeta de Resumen -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body d-flex justify-content-between align-items-center bg-white rounded">
+        <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h4 class="text-primary fw-bold mb-1"><?= htmlspecialchars($prueba['titulo']) ?></h4>
-                <p class="text-muted mb-0"><small>Fecha de realización: <?= $resultado['fecha_rendicion'] ?></small></p>
+                <h2>🔍 Auditoría Detallada de Examen</h2>
+                <h5 class="text-muted">Estudiante: <span
+                        class="text-dark fw-bold"><?= htmlspecialchars($estudiante['nombre']) ?></span>
+                    (<?= htmlspecialchars($estudiante['email']) ?>)</h5>
             </div>
-            <div class="text-end">
-                <span class="text-muted small d-block">Calificación Obtenida</span>
-                <h3 class="fw-bold text-success mb-0"><?= $resultado['calificacion'] ?> / 10</h3>
+            <a href="ver_estadisticas.php?id=<?= $prueba_id ?>" class="btn btn-outline-secondary">⬅ Volver a
+                Estadísticas</a>
+        </div>
+
+        <!-- Tarjeta de Resumen -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body d-flex justify-content-between align-items-center bg-white rounded">
+                <div>
+                    <h4 class="text-primary fw-bold mb-1"><?= htmlspecialchars($prueba['titulo']) ?></h4>
+                    <p class="text-muted mb-0"><small>Fecha de realización: <?= $resultado['fecha_rendicion'] ?></small>
+                    </p>
+                </div>
+                <div class="text-end">
+                    <span class="text-muted small d-block">Calificación Obtenida</span>
+                    <h3 class="fw-bold text-success mb-0"><?= $resultado['calificacion'] ?> / 10</h3>
+                </div>
             </div>
         </div>
-    </div>
 
-    <h4 class="mb-3 text-secondary fw-bold">Desglose de Preguntas y Respuestas del Alumno</h4>
-    <p class="text-muted small mb-4">Visualiza exactamente qué opción seleccionó el alumno para identificar sus errores y planificar refuerzos.</p>
+        <h4 class="mb-3 text-secondary fw-bold">Desglose de Preguntas y Respuestas del Alumno</h4>
+        <p class="text-muted small mb-4">Visualiza exactamente qué opción seleccionó el alumno para identificar sus
+            errores y planificar refuerzos.</p>
 
-    <?php foreach ($preguntas as $index => $pregunta): ?>
-        <?php
+        <?php foreach ($preguntas as $index => $pregunta): ?>
+            <?php
             $pregunta_id = $pregunta['id'];
             // Obtener las opciones de esta pregunta
             $stmtOpc = $pdo->prepare("SELECT * FROM opciones WHERE pregunta_id = ?");
@@ -116,14 +122,15 @@ try {
             $info_respuesta = $respuestas_alumno[$pregunta_id] ?? null;
             $opcion_elegida_id = $info_respuesta['opcion_elegida_id'] ?? null;
             $es_acierto = $info_respuesta['es_acierto'] ?? false;
-        ?>
-        <div class="card mb-3 shadow-sm border-0 border-start border-4 <?= $es_acierto ? 'border-success' : 'border-danger' ?>">
-            <div class="card-body">
-                <h5 class="fw-bold mb-3"><?= ($index + 1) . ". " . htmlspecialchars($pregunta['texto_pregunta']) ?></h5>
-                
-                <ul class="list-group mb-3">
-                    <?php foreach ($opciones as $opcion): ?>
-                        <?php 
+            ?>
+            <div
+                class="card mb-3 shadow-sm border-0 border-start border-4 <?= $es_acierto ? 'border-success' : 'border-danger' ?>">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3"><?= ($index + 1) . ". " . htmlspecialchars($pregunta['texto_pregunta']) ?></h5>
+
+                    <ul class="list-group mb-3">
+                        <?php foreach ($opciones as $opcion): ?>
+                            <?php
                             $estiloOpcion = "";
                             $badge = "";
 
@@ -142,32 +149,34 @@ try {
                                     $badge = ' <span class="float-end badge bg-danger">❌ Marcada por el alumno (Incorrecta)</span>';
                                 }
                             }
-                        ?>
-                        <li class="list-group-item <?= $estiloOpcion ?>">
-                            <?= htmlspecialchars($opcion['texto_opcion']) ?>
-                            <?= $badge ?>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
+                            ?>
+                            <li class="list-group-item <?= $estiloOpcion ?>">
+                                <?= htmlspecialchars($opcion['texto_opcion']) ?>
+                                <?= $badge ?>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
 
-                <?php 
+                    <?php
                     $feedback = $pregunta['retroalimentacion'] ?? '';
-                    if (!empty(trim($feedback))): 
-                ?>
-                    <div class="alert alert-info mb-0 border-0 bg-opacity-10 bg-primary text-dark">
-                        <strong>💡 Feedback pedagógico de refuerzo:</strong><br>
-                        <?= nl2br(htmlspecialchars($feedback)) ?>
-                    </div>
-                <?php endif; ?>
+                    if (!empty(trim($feedback))):
+                        ?>
+                        <div class="alert alert-info mb-0 border-0 bg-opacity-10 bg-primary text-dark">
+                            <strong>💡 Feedback pedagógico de refuerzo:</strong><br>
+                            <?= nl2br(htmlspecialchars($feedback)) ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
+        <?php endforeach; ?>
+
+        <div class="mt-4 text-center">
+            <a href="ver_estadisticas.php?id=<?= $prueba_id ?>" class="btn btn-primary px-5 shadow">Volver a
+                Estadísticas</a>
         </div>
-    <?php endforeach; ?>
-
-    <div class="mt-4 text-center">
-        <a href="ver_estadisticas.php?id=<?= $prueba_id ?>" class="btn btn-primary px-5 shadow">Volver a Estadísticas</a>
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
