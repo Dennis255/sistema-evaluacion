@@ -18,12 +18,12 @@ if (!$prueba_id) {
 }
 
 try {
-    // 1. Obtener datos de la prueba y la calificación obtenida por el estudiante
+    // 1. Obtener datos de la prueba y el último resultado del estudiante
     $stmtPrueba = $pdo->prepare("SELECT * FROM pruebas WHERE id = ?");
     $stmtPrueba->execute([$prueba_id]);
     $prueba = $stmtPrueba->fetch(PDO::FETCH_ASSOC);
 
-    $stmtRes = $pdo->prepare("SELECT calificacion FROM resultados WHERE estudiante_id = ? AND prueba_id = ? ORDER BY id DESC LIMIT 1");
+    $stmtRes = $pdo->prepare("SELECT id, calificacion, fecha_rendicion FROM resultados WHERE estudiante_id = ? AND prueba_id = ? ORDER BY id DESC LIMIT 1");
     $stmtRes->execute([$estudiante_id, $prueba_id]);
     $resultado = $stmtRes->fetch(PDO::FETCH_ASSOC);
 
@@ -31,6 +31,7 @@ try {
         die("No se encontró información de esta prueba para este usuario.");
     }
 
+    $resultado_id = $resultado['id'];
     $calificacion_final = $resultado['calificacion'];
 
     // 2. Obtener las preguntas de la prueba
@@ -38,20 +39,17 @@ try {
     $stmt_preguntas->execute([$prueba_id]);
     $preguntas = $stmt_preguntas->fetchAll(PDO::FETCH_ASSOC);
 
-    // Nota: Como alternativa ideal para revisión histórica detallada, 
-    // mostramos la estructura base de preguntas y la respuesta correcta.
-    $reporte = [];
-    foreach ($preguntas as $pregunta) {
-        $pregunta_id = $pregunta['id'];
-        
-        $stmt_correcta = $pdo->prepare("SELECT texto_opcion FROM opciones WHERE pregunta_id = ? AND es_correcta = TRUE");
-        $stmt_correcta->execute([$pregunta_id]);
-        $texto_correcta = $stmt_correcta->fetchColumn();
-
-        $reporte[] = [
-            'texto_pregunta' => $pregunta['texto_pregunta'],
-            'texto_correcta' => $texto_correcta,
-            'retroalimentacion' => $pregunta['retroalimentacion'] ?? ''
+    // 3. Obtener el detalle de las respuestas que marcó el estudiante en este intento
+    $stmtDetalle = $pdo->prepare("SELECT pregunta_id, opcion_elegida_id, es_acierto FROM detalle_resultados WHERE resultado_id = ?");
+    $stmtDetalle->execute([$resultado_id]);
+    $detalles_raw = $stmtDetalle->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    
+    // Indexar por pregunta_id
+    $respuestas_alumno = [];
+    foreach ($detalles_raw as $det) {
+        $respuestas_alumno[$det['pregunta_id']] = [
+            'opcion_elegida_id' => $det['opcion_elegida_id'],
+            'es_acierto' => $det['es_acierto']
         ];
     }
 
@@ -65,7 +63,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Revisión de Prueba</title>
+    <title>Revisión de Prueba - Estudiante</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light pb-5">
@@ -78,33 +76,73 @@ try {
                     <a href="estudiante_dashboard.php" class="btn btn-outline-secondary">⬅ Volver al Panel</a>
                 </div>
 
+                <!-- Tarjeta de Calificación -->
                 <div class="card shadow border-0 mb-4 text-center">
-                    <div class="card-body py-4 bg-success text-white rounded">
+                    <div class="card-body py-4 <?= $calificacion_final >= 7 ? 'bg-success text-white' : 'bg-warning text-dark' ?> rounded">
                         <h4 class="fw-bold">Calificación Registrada</h4>
                         <h1 class="display-3 fw-bold"><?= $calificacion_final ?> / 10</h1>
+                        <p class="mb-0"><small>Fecha de realización: <?= $resultado['fecha_rendicion'] ?></small></p>
                     </div>
                 </div>
 
-                <h4 class="mb-3 text-primary fw-bold">Banco de Preguntas y Respuestas Correctas</h4>
-                <p class="text-muted">Repasa los conceptos clave de este tema para afianzar tu aprendizaje.</p>
+                <h4 class="mb-3 text-primary fw-bold">Desglose de tus Respuestas</h4>
+                <p class="text-muted">Revisa qué opciones seleccionaste, cuáles fueron correctas o incorrectas y lee la retroalimentación para afianzar tu aprendizaje.</p>
 
-                <?php foreach ($reporte as $index => $item): ?>
-                    <div class="card mb-3 shadow-sm border-0 border-start border-4 border-success">
+                <?php foreach ($preguntas as $index => $pregunta): ?>
+                    <?php
+                        $pregunta_id = $pregunta['id'];
+                        
+                        // Obtener las opciones de esta pregunta
+                        $stmtOpc = $pdo->prepare("SELECT * FROM opciones WHERE pregunta_id = ?");
+                        $stmtOpc->execute([$pregunta_id]);
+                        $opciones = $stmtOpc->fetchAll(PDO::FETCH_ASSOC);
+
+                        // Obtener respuesta del estudiante
+                        $info_respuesta = $respuestas_alumno[$pregunta_id] ?? null;
+                        $opcion_elegida_id = $info_respuesta['opcion_elegida_id'] ?? null;
+                        $es_acierto = $info_respuesta['es_acierto'] ?? false;
+                    ?>
+                    <div class="card mb-3 shadow-sm border-0 border-start border-4 <?= $es_acierto ? 'border-success' : 'border-danger' ?>">
                         <div class="card-body">
-                            <h5 class="fw-bold"><?= ($index + 1) ?>. <?= htmlspecialchars($item['texto_pregunta']) ?></h5>
+                            <h5 class="fw-bold mb-3"><?= ($index + 1) . ". " . htmlspecialchars($pregunta['texto_pregunta']) ?></h5>
                             
-                            <div class="mt-3">
-                                <p class="mb-2 text-success">
-                                    <strong>Respuesta correcta:</strong> <?= htmlspecialchars($item['texto_correcta']) ?>
-                                </p>
-                                
-                                <?php if (!empty(trim($item['retroalimentacion']))): ?>
-                                    <div class="alert alert-info mt-3 mb-0 border-0 bg-opacity-10 bg-primary text-dark">
-                                        <strong>💡 Feedback pedagógico:</strong><br>
-                                        <?= nl2br(htmlspecialchars($item['retroalimentacion'])) ?>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
+                            <ul class="list-group mb-3">
+                                <?php foreach ($opciones as $opcion): ?>
+                                    <?php 
+                                        $estiloOpcion = "";
+                                        $badge = "";
+
+                                        if ($opcion['es_correcta']) {
+                                            $estiloOpcion = "list-group-item-success fw-bold";
+                                            $badge = ' <span class="float-end badge bg-success">✅ Respuesta Correcta</span>';
+                                        }
+
+                                        if ($opcion['id'] == $opcion_elegida_id) {
+                                            if ($opcion['es_correcta']) {
+                                                $estiloOpcion = "list-group-item-success fw-bold border-2 border-dark";
+                                                $badge = ' <span class="float-end badge bg-success">✅ Tu respuesta (Correcta)</span>';
+                                            } else {
+                                                $estiloOpcion = "list-group-item-danger text-decoration-line-through fw-bold";
+                                                $badge = ' <span class="float-end badge bg-danger">❌ Tu respuesta (Incorrecta)</span>';
+                                            }
+                                        }
+                                    ?>
+                                    <li class="list-group-item <?= $estiloOpcion ?>">
+                                        <?= htmlspecialchars($opcion['texto_opcion']) ?>
+                                        <?= $badge ?>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+
+                            <?php 
+                                $feedback = $pregunta['retroalimentacion'] ?? '';
+                                if (!empty(trim($feedback))): 
+                            ?>
+                                <div class="alert alert-info mb-0 border-0 bg-opacity-10 bg-primary text-dark">
+                                    <strong>💡 Feedback pedagógico:</strong><br>
+                                    <?= nl2br(htmlspecialchars($feedback)) ?>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 <?php endforeach; ?>
